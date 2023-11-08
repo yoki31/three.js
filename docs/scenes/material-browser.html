@@ -22,15 +22,11 @@
 		</style>
 	</head>
 	<body>
-
-		<!-- Import maps polyfill -->
-		<!-- Remove this when import maps will be widely supported -->
-		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
-
 		<script type="importmap">
 			{
 				"imports": {
-					"three": "../../build/three.module.js"
+					"three": "../../build/three.module.js",
+					"three/addons/": "../../examples/jsm/"
 				}
 			}
 		</script>
@@ -40,8 +36,8 @@
 		<script type="module">
 
 			import * as THREE from 'three';
-			import { GUI } from '../../examples/jsm/libs/lil-gui.module.min.js';
-			import { RoomEnvironment } from '../../examples/jsm/environments/RoomEnvironment.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+			import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 
 			const constants = {
 
@@ -356,6 +352,7 @@
 				// folder.add( material, 'polygonOffsetFactor' );
 				// folder.add( material, 'polygonOffsetUnits' );
 				folder.add( material, 'alphaTest', 0, 1 ).step( 0.01 ).onChange( needsUpdate( material, geometry ) );
+				folder.add( material, 'alphaHash' ).onChange( needsUpdate( material, geometry ) );
 				folder.add( material, 'visible' );
 				folder.add( material, 'side', constants.side ).onChange( needsUpdate( material, geometry ) );
 
@@ -375,7 +372,7 @@
 				folder.addColor( data, 'color' ).onChange( handleColorChange( material.color ) );
 				folder.add( material, 'wireframe' );
 				folder.add( material, 'vertexColors' ).onChange( needsUpdate( material, geometry ) );
-				folder.add( material, 'fog' );
+				folder.add( material, 'fog' ).onChange( needsUpdate( material, geometry ) );
 
 				folder.add( data, 'envMaps', envMapKeys ).onChange( updateTexture( material, 'envMap', envMaps ) );
 				folder.add( data, 'map', diffuseMapKeys ).onChange( updateTexture( material, 'map', diffuseMaps ) );
@@ -422,7 +419,7 @@
 				folder.add( material, 'linecap', [ 'butt', 'round', 'square' ] );
 				folder.add( material, 'linejoin', [ 'round', 'bevel', 'miter' ] );
 				folder.add( material, 'vertexColors' ).onChange( needsUpdate( material, geometry ) );
-				folder.add( material, 'fog' );
+				folder.add( material, 'fog' ).onChange( needsUpdate( material, geometry ) );
 
 			}
 
@@ -443,7 +440,7 @@
 
 				folder.add( material, 'wireframe' );
 				folder.add( material, 'vertexColors' ).onChange( needsUpdate( material, geometry ) );
-				folder.add( material, 'fog' );
+				folder.add( material, 'fog' ).onChange( needsUpdate( material, geometry ) );
 
 				folder.add( data, 'envMaps', envMapKeys ).onChange( updateTexture( material, 'envMap', envMaps ) );
 				folder.add( data, 'map', diffuseMapKeys ).onChange( updateTexture( material, 'map', diffuseMaps ) );
@@ -493,7 +490,7 @@
 				folder.add( material, 'flatShading' ).onChange( needsUpdate( material, geometry ) );
 				folder.add( material, 'wireframe' );
 				folder.add( material, 'vertexColors' ).onChange( needsUpdate( material, geometry ) );
-				folder.add( material, 'fog' );
+				folder.add( material, 'fog' ).onChange( needsUpdate( material, geometry ) );
 				folder.add( data, 'envMaps', envMapKeys ).onChange( updateTexture( material, 'envMap', envMaps ) );
 				folder.add( data, 'map', diffuseMapKeys ).onChange( updateTexture( material, 'map', diffuseMaps ) );
 				folder.add( data, 'alphaMap', alphaMapKeys ).onChange( updateTexture( material, 'alphaMap', alphaMaps ) );
@@ -529,7 +526,8 @@
 					envMaps: envMapKeysPBR[ 0 ],
 					map: diffuseMapKeys[ 0 ],
 					roughnessMap: roughnessMapKeys[ 0 ],
-					alphaMap: alphaMapKeys[ 0 ]
+					alphaMap: alphaMapKeys[ 0 ],
+					metalnessMap: alphaMapKeys[ 0 ]
 				};
 
 				const folder = gui.addFolder( 'THREE.MeshStandardMaterial' );
@@ -542,13 +540,12 @@
 				folder.add( material, 'flatShading' ).onChange( needsUpdate( material, geometry ) );
 				folder.add( material, 'wireframe' );
 				folder.add( material, 'vertexColors' ).onChange( needsUpdate( material, geometry ) );
-				folder.add( material, 'fog' );
+				folder.add( material, 'fog' ).onChange( needsUpdate( material, geometry ) );
 				folder.add( data, 'envMaps', envMapKeysPBR ).onChange( updateTexture( material, 'envMap', envMaps ) );
 				folder.add( data, 'map', diffuseMapKeys ).onChange( updateTexture( material, 'map', diffuseMaps ) );
 				folder.add( data, 'roughnessMap', roughnessMapKeys ).onChange( updateTexture( material, 'roughnessMap', roughnessMaps ) );
 				folder.add( data, 'alphaMap', alphaMapKeys ).onChange( updateTexture( material, 'alphaMap', alphaMaps ) );
-
-				// TODO metalnessMap
+				folder.add( data, 'metalnessMap', alphaMapKeys ).onChange( updateTexture( material, 'metalnessMap', alphaMaps ) );
 
 			}
 
@@ -560,7 +557,11 @@
 					envMaps: envMapKeys[ 0 ],
 					map: diffuseMapKeys[ 0 ],
 					roughnessMap: roughnessMapKeys[ 0 ],
-					alphaMap: alphaMapKeys[ 0 ]
+					alphaMap: alphaMapKeys[ 0 ],
+					metalnessMap: alphaMapKeys[ 0 ],
+					sheenColor: material.sheenColor.getHex(),
+					specularColor: material.specularColor.getHex(),
+					iridescenceMap: alphaMapKeys[ 0 ]
 				};
 
 				const folder = gui.addFolder( 'THREE.MeshPhysicalMaterial' );
@@ -570,19 +571,27 @@
 
 				folder.add( material, 'roughness', 0, 1 );
 				folder.add( material, 'metalness', 0, 1 );
+				folder.add( material, 'ior', 1, 2.333 );
 				folder.add( material, 'reflectivity', 0, 1 );
+				folder.add( material, 'iridescence', 0, 1 );
+				folder.add( material, 'iridescenceIOR', 1, 2.333 );
+				folder.add( material, 'sheen', 0, 1 );
+				folder.add( material, 'sheenRoughness', 0, 1 );
+				folder.addColor( data, 'sheenColor' ).onChange( handleColorChange( material.sheenColor ) );
 				folder.add( material, 'clearcoat', 0, 1 ).step( 0.01 );
 				folder.add( material, 'clearcoatRoughness', 0, 1 ).step( 0.01 );
+				folder.add( material, 'specularIntensity', 0, 1);
+				folder.addColor( data, 'specularColor' ).onChange( handleColorChange( material.specularColor ) );
 				folder.add( material, 'flatShading' ).onChange( needsUpdate( material, geometry ) );
 				folder.add( material, 'wireframe' );
 				folder.add( material, 'vertexColors' ).onChange( needsUpdate( material, geometry ) );
-				folder.add( material, 'fog' );
+				folder.add( material, 'fog' ).onChange( needsUpdate( material, geometry ) );
 				folder.add( data, 'envMaps', envMapKeysPBR ).onChange( updateTexture( material, 'envMap', envMaps ) );
 				folder.add( data, 'map', diffuseMapKeys ).onChange( updateTexture( material, 'map', diffuseMaps ) );
 				folder.add( data, 'roughnessMap', roughnessMapKeys ).onChange( updateTexture( material, 'roughnessMap', roughnessMaps ) );
 				folder.add( data, 'alphaMap', alphaMapKeys ).onChange( updateTexture( material, 'alphaMap', alphaMaps ) );
-
-				// TODO metalnessMap
+				folder.add( data, 'metalnessMap', alphaMapKeys ).onChange( updateTexture( material, 'metalnessMap', alphaMaps ) );
+				folder.add( data, 'iridescenceMap', alphaMapKeys ).onChange( updateTexture( material, 'iridescenceMap', alphaMaps ) );
 
 			}
 
@@ -736,7 +745,6 @@
 			const renderer = new THREE.WebGLRenderer( { antialias: true } );
 			renderer.setPixelRatio( window.devicePixelRatio );
 			renderer.setSize( window.innerWidth, window.innerHeight );
-			renderer.outputEncoding = THREE.sRGBEncoding;
 			document.body.appendChild( renderer.domElement );
 
 			const pmremGenerator = new THREE.PMREMGenerator( renderer );
@@ -751,15 +759,15 @@
 			const ambientLight = new THREE.AmbientLight( 0x000000 );
 			scene.add( ambientLight );
 
-			const light1 = new THREE.PointLight( 0xffffff, 1, 0 );
+			const light1 = new THREE.DirectionalLight( 0xffffff, 3 );
 			light1.position.set( 0, 200, 0 );
 			scene.add( light1 );
 
-			const light2 = new THREE.PointLight( 0xffffff, 1, 0 );
+			const light2 = new THREE.DirectionalLight( 0xffffff, 3 );
 			light2.position.set( 100, 200, 100 );
 			scene.add( light2 );
 
-			const light3 = new THREE.PointLight( 0xffffff, 1, 0 );
+			const light3 = new THREE.DirectionalLight( 0xffffff, 3 );
 			light3.position.set( - 100, - 200, - 100 );
 			scene.add( light3 );
 

@@ -9,7 +9,8 @@ import {
 	UniformsUtils,
 	Vector3,
 	Vector4,
-	WebGLRenderTarget
+	WebGLRenderTarget,
+	HalfFloatType
 } from 'three';
 
 class Refractor extends Mesh {
@@ -18,7 +19,10 @@ class Refractor extends Mesh {
 
 		super( geometry );
 
+		this.isRefractor = true;
+
 		this.type = 'Refractor';
+		this.camera = new PerspectiveCamera();
 
 		const scope = this;
 
@@ -31,7 +35,7 @@ class Refractor extends Mesh {
 
 		//
 
-		const virtualCamera = new PerspectiveCamera();
+		const virtualCamera = this.camera;
 		virtualCamera.matrixAutoUpdate = false;
 		virtualCamera.userData.refractor = true;
 
@@ -42,11 +46,12 @@ class Refractor extends Mesh {
 
 		// render target
 
-		const renderTarget = new WebGLRenderTarget( textureWidth, textureHeight, { samples: multisample } );
+		const renderTarget = new WebGLRenderTarget( textureWidth, textureHeight, { samples: multisample, type: HalfFloatType } );
 
 		// material
 
 		this.material = new ShaderMaterial( {
+			name: ( shader.name !== undefined ) ? shader.name : 'unspecified',
 			uniforms: UniformsUtils.clone( shader.uniforms ),
 			vertexShader: shader.vertexShader,
 			fragmentShader: shader.fragmentShader,
@@ -218,10 +223,6 @@ class Refractor extends Mesh {
 
 		this.onBeforeRender = function ( renderer, scene, camera ) {
 
-			// Render
-
-			renderTarget.texture.encoding = renderer.outputEncoding;
-
 			// ensure refractors are rendered only once per frame
 
 			if ( camera.userData.refractor === true ) return;
@@ -259,9 +260,9 @@ class Refractor extends Mesh {
 
 }
 
-Refractor.prototype.isRefractor = true;
-
 Refractor.RefractorShader = {
+
+	name: 'RefractorShader',
 
 	uniforms: {
 
@@ -315,6 +316,9 @@ Refractor.RefractorShader = {
 
 			vec4 base = texture2DProj( tDiffuse, vUv );
 			gl_FragColor = vec4( blendOverlay( base.rgb, color ), 1.0 );
+
+			#include <tonemapping_fragment>
+			#include <colorspace_fragment>
 
 		}`
 

@@ -1,6 +1,6 @@
-import Node from '../core/Node.js';
+import Node, { addNodeClass } from '../core/Node.js';
 
-class ArrayElementNode extends Node {
+class ArrayElementNode extends Node { // @TODO: If extending from TempNode it breaks webgpu_compute
 
 	constructor( node, indexNode ) {
 
@@ -8,6 +8,8 @@ class ArrayElementNode extends Node {
 
 		this.node = node;
 		this.indexNode = indexNode;
+
+		this.isArrayElementNode = true;
 
 	}
 
@@ -20,7 +22,7 @@ class ArrayElementNode extends Node {
 	generate( builder ) {
 
 		const nodeSnippet = this.node.build( builder );
-		const indexSnippet = this.indexNode.build( builder, 'int' );
+		const indexSnippet = this.indexNode.build( builder, 'uint' );
 
 		return `${nodeSnippet}[ ${indexSnippet} ]`;
 
@@ -29,3 +31,5 @@ class ArrayElementNode extends Node {
 }
 
 export default ArrayElementNode;
+
+addNodeClass( 'ArrayElementNode', ArrayElementNode );

@@ -1,13 +1,20 @@
-import Node from './Node.js';
+import Node, { addNodeClass } from './Node.js';
+import { addNodeElement, nodeProxy } from '../shadernode/ShaderNode.js';
 
 class VarNode extends Node {
 
-	constructor( node, name = null, nodeType = null ) {
+	constructor( node, name = null ) {
 
-		super( nodeType );
+		super();
 
 		this.node = node;
 		this.name = name;
+
+	}
+
+	isGlobal() {
+
+		return true;
 
 	}
 
@@ -19,28 +26,21 @@ class VarNode extends Node {
 
 	getNodeType( builder ) {
 
-		return super.getNodeType( builder ) || this.node.getNodeType( builder );
+		return this.node.getNodeType( builder );
 
 	}
 
 	generate( builder ) {
 
-		const type = builder.getVectorType( this.getNodeType( builder ) );
-		const node = this.node;
-		const name = this.name;
+		const { node, name } = this;
 
-		const snippet = node.build( builder, type );
-		const nodeVar = builder.getVarFromNode( this, type );
-
-		if ( name !== null ) {
-
-			nodeVar.name = name;
-
-		}
+		const nodeVar = builder.getVarFromNode( this, name, builder.getVectorType( this.getNodeType( builder ) ) );
 
 		const propertyName = builder.getPropertyName( nodeVar );
 
-		builder.addFlowCode( `${propertyName} = ${snippet}` );
+		const snippet = node.build( builder, nodeVar.type );
+
+		builder.addLineFlowCode( `${propertyName} = ${snippet}` );
 
 		return propertyName;
 
@@ -48,6 +48,11 @@ class VarNode extends Node {
 
 }
 
-VarNode.prototype.isVarNode = true;
-
 export default VarNode;
+
+export const temp = nodeProxy( VarNode );
+
+addNodeElement( 'temp', temp ); // @TODO: Will be removed in the future
+addNodeElement( 'toVar', ( ...params ) => temp( ...params ).append() );
+
+addNodeClass( 'VarNode', VarNode );

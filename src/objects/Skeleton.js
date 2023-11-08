@@ -21,9 +21,6 @@ class Skeleton {
 		this.boneMatrices = null;
 
 		this.boneTexture = null;
-		this.boneTextureSize = 0;
-
-		this.frame = - 1;
 
 		this.init();
 
@@ -182,7 +179,6 @@ class Skeleton {
 
 		this.boneMatrices = boneMatrices;
 		this.boneTexture = boneTexture;
-		this.boneTextureSize = size;
 
 		return this;
 
@@ -249,7 +245,7 @@ class Skeleton {
 
 		const data = {
 			metadata: {
-				version: 4.5,
+				version: 4.6,
 				type: 'Skeleton',
 				generator: 'Skeleton.toJSON'
 			},

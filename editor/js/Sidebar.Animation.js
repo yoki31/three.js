@@ -23,13 +23,11 @@ function SidebarAnimation( editor ) {
 		const name = new UIText( animation.name ).setWidth( '200px' );
 		container.add( name );
 
-		const button = new UIButton( getButtonText( action  ) );
+		const button = new UIButton( getButtonText( action ) );
 		button.onClick( function () {
 
-			console.log( action );
-
 			action.isRunning() ? action.stop() : action.play();
-			button.setTextContent( getButtonText( action  ) );
+			button.setTextContent( getButtonText( action ) );
 
 		} );
 
@@ -84,7 +82,7 @@ function SidebarAnimation( editor ) {
 	container.add( animationsList );
 
 	const mixerTimeScaleRow = new UIRow();
-	const mixerTimeScaleNumber = new UINumber( 0.5 ).setWidth( '60px' ).setRange( - 10, 10 );
+	const mixerTimeScaleNumber = new UINumber( 1 ).setWidth( '60px' ).setRange( - 10, 10 );
 	mixerTimeScaleNumber.onChange( function () {
 
 		mixer.timeScale = mixerTimeScaleNumber.getValue();

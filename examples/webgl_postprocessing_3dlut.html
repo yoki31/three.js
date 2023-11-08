@@ -12,18 +12,15 @@
 			<a href="https://threejs.org" target="_blank" rel="noopener">three.js</a> - 3D LUTs<br />
 			Battle Damaged Sci-fi Helmet by
 			<a href="https://sketchfab.com/theblueturtle_" target="_blank" rel="noopener">theblueturtle_</a><br />
-			<a href="https://hdrihaven.com/hdri/?h=royal_esplanade" target="_blank" rel="noopener">Royal Esplanade</a> by <a href="https://hdrihaven.com/" target="_blank" rel="noopener">HDRI Haven</a><br />
+			<a href="https://hdrihaven.com/hdri/?h=royal_esplanade" target="_blank" rel="noopener">Royal Esplanade</a> from <a href="https://hdrihaven.com/" target="_blank" rel="noopener">HDRI Haven</a><br />
 			LUTs from <a href="https://www.rocketstock.com/free-after-effects-templates/35-free-luts-for-color-grading-videos/">RocketStock</a>, <a href="https://www.freepresets.com/product/free-luts-cinematic/">FreePresets.com</a>
 		</div>
-
-		<!-- Import maps polyfill -->
-		<!-- Remove this when import maps will be widely supported -->
-		<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
 
 		<script type="importmap">
 			{
 				"imports": {
-					"three": "../build/three.module.js"
+					"three": "../build/three.module.js",
+					"three/addons/": "./jsm/"
 				}
 			}
 		</script>
@@ -31,17 +28,17 @@
 		<script type="module">
 			import * as THREE from 'three';
 
-			import { OrbitControls } from './jsm/controls/OrbitControls.js';
-			import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
-			import { RGBELoader } from './jsm/loaders/RGBELoader.js';
-			import { EffectComposer } from './jsm/postprocessing/EffectComposer.js';
-			import { RenderPass } from './jsm/postprocessing/RenderPass.js';
-			import { ShaderPass } from './jsm/postprocessing/ShaderPass.js';
-			import { LUTPass } from './jsm/postprocessing/LUTPass.js';
-			import { LUTCubeLoader } from './jsm/loaders/LUTCubeLoader.js';
-			import { LUT3dlLoader } from './jsm/loaders/LUT3dlLoader.js';
-			import { GammaCorrectionShader } from './jsm/shaders/GammaCorrectionShader.js';
-			import { GUI } from './jsm/libs/lil-gui.module.min.js';
+			import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+			import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+			import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+			import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+			import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+			import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+			import { LUTPass } from 'three/addons/postprocessing/LUTPass.js';
+			import { LUTCubeLoader } from 'three/addons/loaders/LUTCubeLoader.js';
+			import { LUT3dlLoader } from 'three/addons/loaders/LUT3dlLoader.js';
+			import { LUTImageLoader } from 'three/addons/loaders/LUTImageLoader.js';
+			import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 			const params = {
 				enabled: true,
@@ -56,7 +53,10 @@
 				'Clayton 33.CUBE': null,
 				'Cubicle 99.CUBE': null,
 				'Remy 24.CUBE': null,
-				'Presetpro-Cinematic.3dl': null
+				'Presetpro-Cinematic.3dl': null,
+				'NeutralLUT': null,
+				'B&WLUT': null,
+				'NightLUT': null
 			};
 
 			let gui;
@@ -107,6 +107,15 @@
 
 							} );
 
+					} else if ( /\LUT$/i.test( name ) ){
+						
+						new LUTImageLoader()
+							.load( `luts/${name}.png`, function ( result ) {
+
+								lutMap[ name ] = result;
+
+							} );
+					
 					} else {
 
 						new LUT3dlLoader()
@@ -124,21 +133,13 @@
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
 				renderer.toneMapping = THREE.ACESFilmicToneMapping;
-				renderer.toneMappingExposure = 1;
 				container.appendChild( renderer.domElement );
 
-				const target = new THREE.WebGLRenderTarget( {
-					minFilter: THREE.LinearFilter,
-					magFilter: THREE.LinearFilter,
-					format: THREE.RGBAFormat,
-					encoding: THREE.sRGBEncoding
-				} );
-
-				composer = new EffectComposer( renderer, target );
+				composer = new EffectComposer( renderer );
 				composer.setPixelRatio( window.devicePixelRatio );
 				composer.setSize( window.innerWidth, window.innerHeight );
 				composer.addPass( new RenderPass( scene, camera ) );
-				composer.addPass( new ShaderPass( GammaCorrectionShader ) );
+				composer.addPass( new OutputPass() );
 
 				lutPass = new LUTPass();
 				composer.addPass( lutPass );

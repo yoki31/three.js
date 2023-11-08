@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
-import { RGBELoader } from '../../../examples/jsm/loaders/RGBELoader.js';
-import { TGALoader } from '../../../examples/jsm/loaders/TGALoader.js';
+import { KTX2Loader } from 'three/addons/loaders/KTX2Loader.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { TGALoader } from 'three/addons/loaders/TGALoader.js';
 
 import { UIElement, UISpan, UIDiv, UIRow, UIButton, UICheckbox, UIText, UINumber } from './ui.js';
 import { MoveObjectCommand } from '../commands/MoveObjectCommand.js';
@@ -76,16 +77,48 @@ class UITexture extends UISpan {
 
 				reader.addEventListener( 'load', function ( event ) {
 
-					const canvas = new TGALoader().parse( event.target.result );
+					const loader = new TGALoader();
+					loader.load( event.target.result, function ( texture ) {
 
-					const texture = new THREE.CanvasTexture( canvas, mapping );
-					texture.sourceFile = file.name;
+						texture.colorSpace = THREE.SRGBColorSpace;
+						texture.sourceFile = file.name;
 
-					scope.setValue( texture );
+						scope.setValue( texture );
 
-					if ( scope.onChangeCallback ) scope.onChangeCallback( texture );
+						if ( scope.onChangeCallback ) scope.onChangeCallback( texture );
+
+
+					} );
 
 				}, false );
+
+				reader.readAsDataURL( file );
+
+			} else if ( extension === 'ktx2' ) {
+
+				reader.addEventListener( 'load', function ( event ) {
+
+					const arrayBuffer = event.target.result;
+					const blobURL = URL.createObjectURL( new Blob( [ arrayBuffer ] ) );
+					const tempRenderer = new THREE.WebGLRenderer();
+					const ktx2Loader = new KTX2Loader();
+					ktx2Loader.setTranscoderPath( '../../examples/jsm/libs/basis/' );
+					ktx2Loader.detectSupport( tempRenderer );
+
+					ktx2Loader.load( blobURL, function ( texture ) {
+
+						texture.colorSpace = THREE.SRGBColorSpace;
+						texture.sourceFile = file.name;
+						texture.needsUpdate = true;
+						scope.setValue( texture );
+
+						if ( scope.onChangeCallback ) scope.onChangeCallback( texture );
+						ktx2Loader.dispose();
+						tempRenderer.dispose();
+
+					} );
+
+				} );
 
 				reader.readAsArrayBuffer( file );
 
@@ -146,19 +179,19 @@ class UITexture extends UISpan {
 
 			const image = texture.image;
 
-			if ( image !== undefined && image.width > 0 ) {
+			if ( image !== undefined && image !== null && image.width > 0 ) {
 
 				canvas.title = texture.sourceFile;
 				const scale = canvas.width / image.width;
 
-				if ( image.data === undefined ) {
-
-					context.drawImage( image, 0, 0, image.width * scale, image.height * scale );
-
-				} else {
+				if ( texture.isDataTexture || texture.isCompressedTexture ) {
 
 					const canvas2 = renderToCanvas( texture );
 					context.drawImage( canvas2, 0, 0, image.width * scale, image.height * scale );
+
+				} else {
+
+					context.drawImage( image, 0, 0, image.width * scale, image.height * scale );
 
 				}
 
@@ -178,13 +211,13 @@ class UITexture extends UISpan {
 
 	}
 
-	setEncoding( encoding ) {
+	setColorSpace( colorSpace ) {
 
 		const texture = this.getValue();
 
 		if ( texture !== null ) {
 
-			texture.encoding = encoding;
+			texture.colorSpace = colorSpace;
 
 		}
 
@@ -275,12 +308,12 @@ class UICubeTexture extends UIElement {
 
 	}
 
-	setEncoding( encoding ) {
+	setColorSpace( colorSpace ) {
 
 		const cubeTexture = this.getValue();
 		if ( cubeTexture !== null ) {
 
-			cubeTexture.encoding = encoding;
+			cubeTexture.colorSpace = colorSpace;
 
 		}
 
@@ -926,7 +959,6 @@ function renderToCanvas( texture ) {
 	if ( renderer === undefined ) {
 
 		renderer = new THREE.WebGLRenderer();
-		renderer.outputEncoding = THREE.sRGBEncoding;
 
 	}
 
